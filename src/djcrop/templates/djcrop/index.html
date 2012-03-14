@@ -1,0 +1,69 @@
+<html>
+	<head>	
+		
+		<title>Test</title>
+		
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/vendor/jquery.ui.widget.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/jquery.iframe-transport.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/jquery.fileupload.js"></script>
+		<script src="{{ STATIC_URL }}jcrop/js/jquery.Jcrop.min.js"></script>
+		<link rel="stylesheet" href="{{ STATIC_URL }}jcrop/css/jquery.Jcrop.css" type="text/css" />
+		<script>
+			$(document).ready(function(){
+				
+			});
+		</script>
+		
+		
+	
+		<script>
+		
+		function updateCoords(object, c){
+			$('#id_image_1').attr('value', c.x);
+			$('#id_image_2').attr('value', c.y);
+			$('#id_image_3').attr('value', c.w);
+			$('#id_image_4').attr('value', c.h);
+		}
+		
+		$(function () {
+		    $('#id_image_0').fileupload({
+		        dataType: 'json',
+		        url: '{% url save_tmp_image %}',
+		        done: function (e, data) {
+		            $.each(data.result, function (index, file) {
+		                imagePath = file.url;
+						var tempImage = $('<img>');
+						tempImage.attr('src', imagePath);
+						tempImage.attr('id', 'tempImage');
+						$('body').append(tempImage);
+						$('#tempImage').Jcrop({			
+				            onChange: function(c) { updateCoords('#id_image_0',c); }
+						});
+						$('#id_image_5').attr('value', file.id);
+		            });
+		        }
+		    });
+		});
+		</script>
+		
+		
+	</head>
+	<body>
+		
+		<form method="post" enctype="multipart/form-data" action="{% url save_image %}">
+			{% csrf_token %}
+			
+			{% for field in form %}
+				<p>
+					{{ field.errors }}
+					{{ field }}					
+				</p>
+			{% endfor %}
+			
+			<input type="submit" />
+			
+		</form>
+		
+	</body>
+</html>

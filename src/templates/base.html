@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+
+	<head>	
+		
+		<title>Test</title>
+		
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/vendor/jquery.ui.widget.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/jquery.iframe-transport.js"></script>
+		<script src="{{ STATIC_URL }}fileupload/js/jquery.fileupload.js"></script>
+		<script src="{{ STATIC_URL }}jcrop/js/jquery.Jcrop.min.js"></script>
+		<link rel="stylesheet" href="{{ STATIC_URL }}jcrop/css/jquery.Jcrop.css" type="text/css" />
+		
+		
+	
+		<script>
+		
+		function updateCoords(object, c){
+			$('#id_image_1').attr('value', c.x);
+			$('#id_image_2').attr('value', c.y);
+			$('#id_image_3').attr('value', c.w);
+			$('#id_image_4').attr('value', c.h);
+		}
+		
+		$(function () {
+			
+			$('#id_image_0').click(function(){
+				$('#id_image_0').fileupload({
+			        dataType: 'json',
+			        url: '{% url save_tmp_image %}',
+			        done: function (e, data) {
+			            $.each(data.result, function (index, file) {
+			                imagePath = file.url;
+							var tempImage = $('<img>');
+							tempImage.attr('src', imagePath);
+							tempImage.attr('id', 'tempImage');
+							$('body').append(tempImage);
+							$('#tempImage').Jcrop({			
+					            onChange: function(c) { updateCoords('#id_image_0', c); }
+							});
+							$('#id_image_5').attr('value', file.id);
+			            });
+			        }
+			    });
+				
+				$(this).click();
+				
+			});
+			
+		    
+		});
+		</script>
+		
+		
+	</head>
+
+<body>
+
+    <form method="post" enctype="multipart/form-data" action=".">
+			{% csrf_token %}
+			{{ form.as_p }}
+			<input type="submit" />
+	</form>
+
+</body>
+</html>

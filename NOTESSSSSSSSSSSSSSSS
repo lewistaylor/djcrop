@@ -1,0 +1,5 @@
+THUMBNAIL_DEBUG = True in local
+
+syncdb
+
+needs python-dev package for unix system!
