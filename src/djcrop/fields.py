@@ -1,7 +1,10 @@
 from PIL import Image
 from django import forms
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import ImageField
+from django.forms.util import ErrorList
 from djcrop.models import TempImage
 from djcrop.widgets import CroppedImageWidget
 
@@ -23,6 +26,65 @@ class CroppedImageFormField(forms.MultiValueField):
             forms.CharField(required=False),
         )
         super(CroppedImageFormField, self).__init__(fields, *args, **kwargs)
+
+    def clean(self, value):
+        """
+        Validates every value in the given list. A value is validated against
+        the corresponding Field in self.fields.
+
+        For example, if this MultiValueField was instantiated with
+        fields=(DateField(), TimeField()), clean() would call
+        DateField.clean(value[0]) and TimeField.clean(value[1]).
+        """
+        clean_data = []
+        errors = ErrorList()
+        if not value or isinstance(value, (list, tuple)):
+            if not value or not [v for v in value if v not in validators.EMPTY_VALUES]:
+                if self.required:
+                    raise ValidationError(self.error_messages['required'])
+                else:
+                    return self.compress([])
+        else:
+            raise ValidationError(self.error_messages['invalid'])
+        
+        if value[0]:
+            try:
+                field_value = value[0]
+            except IndexError:
+                field_value = None
+            if self.required and field_value in validators.EMPTY_VALUES:
+                raise ValidationError(self.error_messages['required'])
+            try:
+                clean_data.append(self.fields[0].clean(field_value))
+            except ValidationError, e:
+                # Collect all validation errors in a single list, which we'll
+                # raise at the end of clean(), rather than raising a single
+                # exception for the first error we encounter.
+                errors.extend(e.messages)
+            
+            clean_data.extend([None for i in range(5)])
+        else:
+            clean_data = [None,]
+            for i, field in enumerate(self.fields[1:]):
+                try:
+                    field_value = value[i+1]
+                except IndexError:
+                    field_value = None
+                if self.required and field_value in validators.EMPTY_VALUES:
+                    raise ValidationError(self.error_messages['required'])
+                try:
+                    clean_data.append(field.clean(field_value))
+                except ValidationError, e:
+                    # Collect all validation errors in a single list, which we'll
+                    # raise at the end of clean(), rather than raising a single
+                    # exception for the first error we encounter.
+                    errors.extend(e.messages)
+            if errors:
+                raise ValidationError(errors)
+
+        out = self.compress(clean_data)
+        self.validate(out)
+        return out
 
     def compress(self, data_list):
         if data_list[5]:
