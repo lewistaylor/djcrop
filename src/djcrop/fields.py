@@ -9,8 +9,8 @@ from djcrop.models import TempImage
 from djcrop.widgets import CroppedImageWidget
 
 
-        
-        
+
+
 
 class CroppedImageFormField(forms.MultiValueField):
     widget = CroppedImageWidget
@@ -46,7 +46,7 @@ class CroppedImageFormField(forms.MultiValueField):
                     return self.compress([])
         else:
             raise ValidationError(self.error_messages['invalid'])
-        
+
         if value[0]:
             try:
                 field_value = value[0]
@@ -61,13 +61,13 @@ class CroppedImageFormField(forms.MultiValueField):
                 # raise at the end of clean(), rather than raising a single
                 # exception for the first error we encounter.
                 errors.extend(e.messages)
-            
+
             clean_data.extend([None for i in range(5)])
         else:
-            clean_data = [None,]
+            clean_data = [None, ]
             for i, field in enumerate(self.fields[1:]):
                 try:
-                    field_value = value[i+1]
+                    field_value = value[i + 1]
                 except IndexError:
                     field_value = None
                 if self.required and field_value in validators.EMPTY_VALUES:
@@ -103,7 +103,9 @@ class CroppedImageFormField(forms.MultiValueField):
             name = tmp_image.image.name
             data = crop.tostring('jpeg', 'RGB')
             content_type = 'image/jpg'
-            return SimpleUploadedFile(name.split('.')[-2], data, content_type)
+            tmp_image.image.delete()
+            tmp_image.delete()
+            return SimpleUploadedFile(name.split('.')[-2] + '.jpg', data, content_type)
         else:
             return data_list[0]
 
@@ -111,8 +113,9 @@ class CroppedImageFormField(forms.MultiValueField):
 
 class CroppedImageField(ImageField):
 
-    
+
     def formfield(self, **kwargs):
         defaults = {'form_class': CroppedImageFormField}
+        kwargs['widget'] = CroppedImageWidget
         defaults.update(kwargs)
         return super(CroppedImageField, self).formfield(**defaults)
