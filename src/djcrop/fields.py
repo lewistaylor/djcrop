@@ -13,10 +13,10 @@ from djcrop.widgets import CroppedImageWidget
 
 
 class CroppedImageFormField(forms.MultiValueField):
-    widget = CroppedImageWidget
 
     def __init__(self, *args, **kwargs):
         self.max_length = kwargs.pop('max_length', None)
+        self.widget = CroppedImageWidget({'ratio': kwargs.pop('ratio', 0)})
         fields = (
             forms.ImageField(required=False),
             forms.CharField(required=False),
@@ -24,6 +24,7 @@ class CroppedImageFormField(forms.MultiValueField):
             forms.CharField(required=False),
             forms.CharField(required=False),
             forms.CharField(required=False),
+            forms.CharField(required=False)
         )
         super(CroppedImageFormField, self).__init__(fields, *args, **kwargs)
 
@@ -38,14 +39,18 @@ class CroppedImageFormField(forms.MultiValueField):
         """
         clean_data = []
         errors = ErrorList()
-        if not value or isinstance(value, (list, tuple)):
-            if not value or not [v for v in value if v not in validators.EMPTY_VALUES]:
-                if self.required:
-                    raise ValidationError(self.error_messages['required'])
-                else:
-                    return self.compress([])
-        else:
-            raise ValidationError(self.error_messages['invalid'])
+
+            # Currently no file is uploaded so we continue validation.
+            # If a file is already updated is and you haven't
+
+#            if not value or isinstance(value, (list, tuple)):
+#                if not value or not [v for v in value if v not in validators.EMPTY_VALUES]:
+#                    if self.required:
+#                        raise ValidationError(self.error_messages['required'])
+#                    else:
+#                        return self.compress([])
+#            else:
+#                raise ValidationError(self.error_messages['invalid'])
 
         if value[0]:
             try:
@@ -62,15 +67,17 @@ class CroppedImageFormField(forms.MultiValueField):
                 # exception for the first error we encounter.
                 errors.extend(e.messages)
 
-            clean_data.extend([None for i in range(5)])
+            clean_data.extend([None for i in range(6)])
         else:
             clean_data = [None, ]
-            for i, field in enumerate(self.fields[1:]):
+            for i, field in enumerate(self.fields[1:6]):
                 try:
                     field_value = value[i + 1]
                 except IndexError:
                     field_value = None
                 if self.required and field_value in validators.EMPTY_VALUES:
+                    if value[6]:
+                        return None
                     raise ValidationError(self.error_messages['required'])
                 try:
                     clean_data.append(field.clean(field_value))
@@ -80,7 +87,10 @@ class CroppedImageFormField(forms.MultiValueField):
                     # exception for the first error we encounter.
                     errors.extend(e.messages)
             if errors:
+                if value[6]:
+                    return None
                 raise ValidationError(errors)
+
 
         out = self.compress(clean_data)
         self.validate(out)
@@ -113,9 +123,13 @@ class CroppedImageFormField(forms.MultiValueField):
 
 class CroppedImageField(ImageField):
 
+    def __init__(self, **kwargs):
+        self.ratio = kwargs.pop('ratio', 0)
+        super(CroppedImageField, self).__init__(**kwargs)
 
     def formfield(self, **kwargs):
         defaults = {'form_class': CroppedImageFormField}
-        kwargs['widget'] = CroppedImageWidget
+        kwargs['widget'] = CroppedImageWidget({'ratio': self.ratio})
+        kwargs['ratio'] = self.ratio
         defaults.update(kwargs)
         return super(CroppedImageField, self).formfield(**defaults)

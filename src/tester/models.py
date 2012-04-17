@@ -5,5 +5,5 @@ from djcrop.fields import CroppedImageField
 
 
 class MyTest(models.Model):
-    
+
     image = CroppedImageField(upload_to='test')

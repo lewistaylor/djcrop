@@ -1,0 +1,8 @@
+.djcrop {
+	overflow: hidden;
+}
+
+.djcrop div {
+	float: left;
+	clear: both;
+}
